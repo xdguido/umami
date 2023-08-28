@@ -52,6 +52,12 @@ export function ReportTemplates({ showHeader = true }) {
       url: '/reports/retention',
       icon: <Magnet />,
     },
+    {
+      title: formatMessage(labels.sankey),
+      description: 'Track user journeys across your website.',
+      url: '/reports/sankey',
+      icon: <Magnet />,
+    },
   ];
 
   return (

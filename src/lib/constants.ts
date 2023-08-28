@@ -121,6 +121,7 @@ export const REPORT_TYPES = {
   funnel: 'funnel',
   insights: 'insights',
   retention: 'retention',
+  sankey: 'sankey',
 } as const;
 
 export const REPORT_PARAMETERS = {
