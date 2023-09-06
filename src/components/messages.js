@@ -181,6 +181,10 @@ export const labels = defineMessages({
     defaultMessage: 'Measure your website stickiness by tracking how often users return.',
   },
   sankey: { id: 'label.sankey', defaultMessage: 'Sankey' },
+  sankeyDescription: {
+    id: 'label.sankey-description',
+    defaultMessage: 'Placeholder Sankey description.',
+  },
   dropoff: { id: 'label.dropoff', defaultMessage: 'Dropoff' },
   referrer: { id: 'label.referrer', defaultMessage: 'Referrer' },
   country: { id: 'label.country', defaultMessage: 'Country' },

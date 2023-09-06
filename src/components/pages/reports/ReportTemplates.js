@@ -56,7 +56,7 @@ export function ReportTemplates({ showHeader = true }) {
     },
     {
       title: formatMessage(labels.sankey),
-      description: 'Track user journeys across your website.',
+      description: formatMessage(labels.sankeyDescription),
       url: '/reports/sankey',
       icon: <Magnet />,
     },

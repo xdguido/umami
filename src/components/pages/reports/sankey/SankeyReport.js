@@ -1,32 +1,28 @@
-import RetentionTable from './SankeyTable';
-import RetentionParameters from './SankeyParameters';
+import SankeyChart from './SankeyChart';
+import SankeyTable from './SankeyTable';
+import SankeyParameters from './SankeyParameters';
 import Report from '../Report';
 import ReportHeader from '../ReportHeader';
 import ReportMenu from '../ReportMenu';
 import ReportBody from '../ReportBody';
-import Magnet from 'assets/magnet.svg';
+import Sankey from 'assets/funnel.svg';
 import { REPORT_TYPES } from 'lib/constants';
-import { parseDateRange } from 'lib/date';
-import { endOfMonth, startOfMonth } from 'date-fns';
 
 const defaultParameters = {
-  type: REPORT_TYPES.retention,
-  parameters: {
-    dateRange: parseDateRange(
-      `range:${startOfMonth(new Date()).getTime()}:${endOfMonth(new Date()).getTime()}`,
-    ),
-  },
+  type: REPORT_TYPES.sankey,
+  parameters: { window: 60, urls: [] },
 };
 
-export default function RetentionReport({ reportId }) {
+export default function SankeyReport({ reportId }) {
   return (
     <Report reportId={reportId} defaultParameters={defaultParameters}>
-      <ReportHeader icon={<Magnet />} />
+      <ReportHeader icon={<Sankey />} />
       <ReportMenu>
-        <RetentionParameters />
+        <SankeyParameters />
       </ReportMenu>
       <ReportBody>
-        <RetentionTable />
+        <SankeyChart />
+        <SankeyTable />
       </ReportBody>
     </Report>
   );
