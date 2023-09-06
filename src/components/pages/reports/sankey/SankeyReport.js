@@ -10,7 +10,6 @@ import { REPORT_TYPES } from 'lib/constants';
 
 const defaultParameters = {
   type: REPORT_TYPES.sankey,
-  parameters: { window: 60, urls: [] },
 };
 
 export default function SankeyReport({ reportId }) {

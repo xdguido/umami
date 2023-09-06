@@ -3,7 +3,7 @@ import { useAuth, useCors, useValidate } from 'lib/middleware';
 import { NextApiRequestQueryBody } from 'lib/types';
 import { NextApiResponse } from 'next';
 import { methodNotAllowed, ok, unauthorized } from 'next-basics';
-import { getRetention } from 'queries';
+import { getSankey } from 'queries';
 import * as yup from 'yup';
 
 export interface RetentionRequestBody {
@@ -44,7 +44,7 @@ export default async (
       return unauthorized(res);
     }
 
-    const data = await getRetention(websiteId, {
+    const data = await getSankey(websiteId, {
       startDate: new Date(startDate),
       endDate: new Date(endDate),
     });

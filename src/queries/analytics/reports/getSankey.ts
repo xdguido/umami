@@ -8,7 +8,6 @@ export async function getSankey(
     filters: {
       startDate: Date;
       endDate: Date;
-      timezone: string;
     },
   ]
 ) {
@@ -23,79 +22,38 @@ async function relationalQuery(
   filters: {
     startDate: Date;
     endDate: Date;
-    timezone: string;
   },
 ): Promise<
   {
-    date: string;
-    day: number;
-    visitors: number;
-    returnVisitors: number;
-    percentage: number;
+    from: string;
+    to: string;
+    flow: number;
   }[]
 > {
-  const { startDate, endDate, timezone = 'UTC' } = filters;
-  const { getDateQuery, getDayDiffQuery, getCastColumnQuery, rawQuery } = prisma;
-  const unit = 'day';
+  const { startDate, endDate } = filters;
+  const { rawQuery } = prisma;
 
   return rawQuery(
     `
-    WITH cohort_items AS (
-      select session_id,
-        ${getDateQuery('created_at', unit, timezone)} as cohort_date  
-      from session 
-      where website_id = {{websiteId::uuid}}
-        and created_at between {{startDate}} and {{endDate}}
-    ),
-    user_activities AS (
-      select distinct
-        w.session_id,
-        ${getDayDiffQuery(
-          getDateQuery('created_at', unit, timezone),
-          'c.cohort_date',
-        )} as day_number
-      from website_event w
-      join cohort_items c
-      on w.session_id = c.session_id
-      where website_id = {{websiteId::uuid}}
-          and created_at between {{startDate}} and {{endDate}}
-      ),
-    cohort_size as (
-      select cohort_date,
-        count(*) as visitors
-      from cohort_items
-      group by 1
-      order by 1
-    ),
-    cohort_date as (
-      select
-        c.cohort_date,
-        a.day_number,
-        count(*) as visitors
-      from user_activities a
-      join cohort_items c
-      on a.session_id = c.session_id
-      group by 1, 2
-    )
-    select
-      c.cohort_date as date,
-      c.day_number as day,
-      s.visitors,
-      c.visitors as "returnVisitors",
-      ${getCastColumnQuery('c.visitors', 'float')} * 100 / s.visitors  as percentage
-    from cohort_date c
-    join cohort_size s
-    on c.cohort_date = s.cohort_date
-    where c.day_number <= 31
-    order by 1, 2`,
+    select distinct
+        referrer_path as "from",
+        url_path as "to",
+        count(distinct session_id) as "flow"
+    from website_event
+    where website_id = {{websiteId::uuid}}
+      and created_at between {{startDate}} and {{endDate}}
+      and referrer_path != url_path
+      and referrer_path != ''
+    group by referrer_path, url_path
+    order by flow desc
+    limit 50;
+   `,
     {
       websiteId,
       startDate,
       endDate,
     },
-  ).then(results => {
-    return results.map(i => ({ ...i, percentage: Number(i.percentage) || 0 }));
-  });
+  );
 }
 
 async function clickhouseQuery(
