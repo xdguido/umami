@@ -25,9 +25,12 @@ async function relationalQuery(
   },
 ): Promise<
   {
-    from: string;
-    to: string;
-    flow: number;
+    e1: string;
+    e2: string;
+    e3: string;
+    e4: string;
+    e5: string;
+    count: string;
   }[]
 > {
   const { startDate, endDate } = filters;
@@ -35,19 +38,42 @@ async function relationalQuery(
 
   return rawQuery(
     `
-    select distinct
-        referrer_path as "from",
-        url_path as "to",
-        count(distinct session_id) as "flow"
-    from website_event
-    where website_id = {{websiteId::uuid}}
-      and created_at between {{startDate}} and {{endDate}}
-      and referrer_path != url_path
-      and referrer_path != ''
-    group by referrer_path, url_path
-    order by flow desc
-    limit 50;
-   `,
+    WITH events AS (
+      select distinct
+          w.session_id,
+          w.referrer_path,
+          COALESCE(w.event_name, w.url_path) event,
+          ROW_NUMBER() OVER (PARTITION BY w.session_id ORDER BY w.created_at) AS event_number
+      from website_event w
+      where website_id = {{websiteId::uuid}}
+          and created_at between {{startDate}} and {{endDate}}
+          and w.referrer_path != w.url_path), 
+    sequences as (
+      SELECT s.e1,
+            s.e2,
+            s.e3,
+            s.e4,
+            s.e5,
+            count(*) count
+      FROM (
+          SELECT session_id,
+              MAX(CASE WHEN event_number = 1 THEN event ELSE NULL END) AS e1,
+              MAX(CASE WHEN event_number = 2 THEN event ELSE NULL END) AS e2,
+              MAX(CASE WHEN event_number = 3 THEN event ELSE NULL END) AS e3,
+              MAX(CASE WHEN event_number = 4 THEN event ELSE NULL END) AS e4,
+              MAX(CASE WHEN event_number = 5 THEN event ELSE NULL END) AS e5
+          FROM events
+          group by session_id) s
+      group by s.e1,
+            s.e2,
+            s.e3,
+            s.e4,
+            s.e5)
+    select *
+    from sequences
+    order by count desc
+    limit 100
+    `,
     {
       websiteId,
       startDate,
@@ -61,70 +87,58 @@ async function clickhouseQuery(
   filters: {
     startDate: Date;
     endDate: Date;
-    timezone: string;
   },
 ): Promise<
   {
-    date: string;
-    day: number;
-    visitors: number;
-    returnVisitors: number;
-    percentage: number;
+    e1: string;
+    e2: string;
+    e3: string;
+    e4: string;
+    e5: string;
+    count: string;
   }[]
 > {
-  const { startDate, endDate, timezone = 'UTC' } = filters;
-  const { getDateQuery, getDateStringQuery, rawQuery } = clickhouse;
-  const unit = 'day';
+  const { startDate, endDate } = filters;
+  const { rawQuery } = clickhouse;
 
   return rawQuery(
     `
-    WITH cohort_items AS (
-      select
-        min(${getDateQuery('created_at', unit, timezone)}) as cohort_date,
-        session_id
-      from website_event
-      where website_id = {websiteId:UUID}
-      and created_at between {startDate:DateTime64} and {endDate:DateTime64}
-      group by session_id
-    ),
-    user_activities AS (
+    WITH events AS (
       select distinct
-        w.session_id,
-        (${getDateQuery('created_at', unit, timezone)} - c.cohort_date) / 86400 as day_number
-      from website_event w
-      join cohort_items c
-      on w.session_id = c.session_id
+          w.session_id,
+          w.referrer_path,
+          coalesce(nullIf(w.event_name, ''), w.url_path) event,
+          row_number() OVER (PARTITION BY w.session_id ORDER BY w.created_at) AS event_number
+      from umami.website_event w
       where website_id = {websiteId:UUID}
-        and created_at between {startDate:DateTime64} and {endDate:DateTime64}
-    ),
-    cohort_size as (
-      select cohort_date,
-        count(*) as visitors
-      from cohort_items
-      group by 1
-      order by 1
-    ),
-    cohort_date as (
-      select
-        c.cohort_date,
-        a.day_number,
-        count(*) as visitors
-      from user_activities a
-      join cohort_items c
-      on a.session_id = c.session_id
-      group by 1, 2
-    )
-    select
-      ${getDateStringQuery('c.cohort_date', unit)} as date,
-      c.day_number as day,
-      s.visitors as visitors,
-      c.visitors returnVisitors,
-      c.visitors * 100 / s.visitors as percentage
-    from cohort_date c
-    join cohort_size s
-    on c.cohort_date = s.cohort_date
-    where c.day_number <= 31
-    order by 1, 2`,
+          and created_at between {startDate:DateTime64} and {endDate:DateTime64}
+          and w.referrer_path != w.url_path),
+    sequences as (
+        SELECT s.e1,
+            s.e2,
+            s.e3,
+            s.e4,
+            s.e5,
+            count(*) count
+        FROM (
+          SELECT session_id,
+              max(CASE WHEN event_number = 1 THEN event ELSE NULL END) AS e1,
+              max(CASE WHEN event_number = 2 THEN event ELSE NULL END) AS e2,
+              max(CASE WHEN event_number = 3 THEN event ELSE NULL END) AS e3,
+              max(CASE WHEN event_number = 4 THEN event ELSE NULL END) AS e4,
+              max(CASE WHEN event_number = 5 THEN event ELSE NULL END) AS e5
+          FROM events
+          group by session_id) s
+        group by s.e1,
+            s.e2,
+            s.e3,
+            s.e4,
+            s.e5)
+    select *
+    from sequences
+    order by count desc
+    limit 100
+    `,
     {
       websiteId,
       startDate,
