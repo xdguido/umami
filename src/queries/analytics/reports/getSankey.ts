@@ -40,14 +40,14 @@ async function relationalQuery(
     `
     WITH events AS (
       select distinct
-          w.session_id,
-          w.referrer_path,
-          COALESCE(w.event_name, w.url_path) event,
-          ROW_NUMBER() OVER (PARTITION BY w.session_id ORDER BY w.created_at) AS event_number
-      from website_event w
+          session_id,
+          referrer_path,
+          COALESCE(event_name, url_path) event,
+          ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY created_at) AS event_number
+      from website_event 
       where website_id = {{websiteId::uuid}}
           and created_at between {{startDate}} and {{endDate}}
-          and w.referrer_path != w.url_path), 
+          and referrer_path != url_path), 
     sequences as (
       SELECT s.e1,
             s.e2,
@@ -105,14 +105,14 @@ async function clickhouseQuery(
     `
     WITH events AS (
       select distinct
-          w.session_id,
-          w.referrer_path,
-          coalesce(nullIf(w.event_name, ''), w.url_path) event,
-          row_number() OVER (PARTITION BY w.session_id ORDER BY w.created_at) AS event_number
-      from umami.website_event w
+          session_id,
+          referrer_path,
+          coalesce(nullIf(event_name, ''), url_path) event,
+          row_number() OVER (PARTITION BY session_id ORDER BY created_at) AS event_number
+      from umami.website_event 
       where website_id = {websiteId:UUID}
           and created_at between {startDate:DateTime64} and {endDate:DateTime64}
-          and w.referrer_path != w.url_path),
+          and referrer_path != url_path),
     sequences as (
         SELECT s.e1,
             s.e2,
