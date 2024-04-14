@@ -23,7 +23,6 @@
   "extends": [
     "plugin:@typescript-eslint/recommended",
     "eslint:recommended",
-    "plugin:prettier/recommended",
     "plugin:import/errors",
     "plugin:import/typescript",
     "plugin:css-modules/recommended",
@@ -45,7 +44,12 @@
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-var-requires": "off",
     "@typescript-eslint/no-empty-interface": "off",
-    "@typescript-eslint/no-unused-vars": ["error", { "ignoreRestSiblings": true }]
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "ignoreRestSiblings": true
+      }
+    ]
   },
   "globals": {
     "React": "writable"
